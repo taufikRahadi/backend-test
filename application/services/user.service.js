@@ -13,7 +13,7 @@ class UserService {
    */
   static async findByEmail(email, selectPassword = false) {
     try {
-      selectPassword = selectPassword ? '-password' : '' // check if selectPassword true then exclude password
+      selectPassword = selectPassword ? '-password' : '' // check if selectPassword true then include the password
       const user = await UserModel.findOne({
         email: email
       }).select(selectPassword)
