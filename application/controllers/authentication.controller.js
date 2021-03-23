@@ -8,14 +8,20 @@ const bcrypt = require('bcrypt')
 
 class AuthenticationController {
 
+  /**
+   * 
+   * @param {*} req 
+   * @param {*} res 
+   */
   static async signIn(req, res) {
-    const { body: { data } } = req
+    const { body: { data } } = req // destruct request body to get the data object
 
+    // validate request body
     const { error } = signInRequestValidation(data)
     checkValidationError(error)
 
     try {
-      const findUser = await UserService.findByEmail(data.email)
+      const findUser = await UserService.findByEmail(data.email) // find user by email from user service
       if (!findUser) notFoundError(res, `user with email ${data.email} was not found`)
 
       const comparePassword = bcrypt.compareSync(data.password, findUser.password)
@@ -28,13 +34,13 @@ class AuthenticationController {
           )
 
       const accessToken = jwt.sign({
-        exp: Math.floor(Date.now() / 1000) + (60),
+        exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour
         data: data.email
       }, process.env.JWT_SECRET)
       const refreshToken = jwt.sign({
-        exp: Math.floor(Date.now() / 1000) + (60 * 60) * 24,
+        exp: Math.floor(Date.now() / 1000) + (60 * 60) * 24, // 24 hour
         data: data.email
-      }, process.env.JWT_SECRET)
+      }, `${process.env.JWT_SECRET}-refresh`)
 
       res.json(responseFormatter(true, 'successfully signed in', { accessToken, refreshToken }))
 
@@ -42,6 +48,29 @@ class AuthenticationController {
       internalServerError(res, error.message, error)
     }
 
+  }
+
+  static async refreshSession(req, res) {
+    const { body: { data: { refreshToken } } } = req
+
+    try {
+      const verifyToken = jwt.verify(refreshToken, `${process.env.JWT_SECRET}-refresh`)
+      const { data } = jwt.decode(refreshToken)
+
+      const newAccessToken = jwt.sign({
+        exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour
+        data: data
+      }, process.env.JWT_SECRET)
+
+      const newRefreshToken = jwt.sign({
+        exp: Math.floor(Date.now() / 1000) + (60 * 60) * 24, // 24 hour
+        data: data
+      }, `${process.env.JWT_SECRET}-refresh`)
+
+      res.json(responseFormatter(true, 'session updated', { accessToken: newAccessToken, refreshToken: newRefreshToken }))
+    } catch (error) {
+      res.status(401).json(responseFormatter(false, error.message))
+    }
   }
 
   static async register(req, res) {
