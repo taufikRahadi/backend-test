@@ -4,6 +4,11 @@ API Documentation = https://documenter.getpostman.com/view/8777362/TzCFhBCG
 
 APP URL = https://taufikrahadi-backend-test.herokuapp.com/
 
+## Tech Stack
+  - ExpressJS
+  - MongoDB (mongo atlas service)
+  - Heroku
+
 ## Project Structures
 
   - **application**
